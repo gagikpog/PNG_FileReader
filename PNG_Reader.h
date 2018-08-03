@@ -1,17 +1,18 @@
 #ifndef PNG_READER_H
 #define PNG_READER_H
 
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "compression.h"
 
-typedef unsigned char BYTE;
-
-enum PNG_ImageType
+enum PNG_ImageTypes:BYTE
 {
 	Greyscale = 0,Truecolour = 2,IndexedColour = 3,GreyscaleWithAlpha = 4,TrueColourWithAlpha = 6
 };
+
+enum PNG_FilterTypes:BYTE
+{
+	none = 0, Sub = 1, Up = 2, Average = 3 , Paeth = 4
+};
+
 /*------------------Functions------------------*/
 inline int UcharArrToUint(BYTE* arr)
 {
@@ -35,7 +36,8 @@ inline int UcharArrToUshort(BYTE* arr)
 struct png_IHSR
 {
 	unsigned int width = 0,height = 0;
-	BYTE deep = 0,colorType = 0,compressionMethod = 0,filterMethod = 0,interlaceMethod = 0;
+	BYTE deep = 0,colorType = 0,compressionMethod = 0,interlaceMethod = 0;
+	PNG_FilterTypes filterMethod = PNG_FilterTypes::none;
 	void list()
 	{
 		std::cout<< "---------Head---------\n"
@@ -61,7 +63,7 @@ struct png_IHSR
 		deep				= arr[12];
 		colorType			= arr[13];
 		compressionMethod	= arr[14];
-		filterMethod		= arr[15];
+		filterMethod		= (PNG_FilterTypes) arr[15];
 		interlaceMethod		= arr[16];
 	}
 	const int length = 25;
@@ -112,6 +114,10 @@ struct png_IDAT
 			 0  1  2  3  
 		*/
 		length = UcharArrToUint(arr - 4) + 12;
+		array a;
+		a.data = arr+4;
+		a.size = length - 12;
+		decompression(a);
 	}
 	int length = 0;
 	const std::string Name = "IDAT";
@@ -258,23 +264,23 @@ struct png_bKGD
 	}
 	void read(BYTE * arr ,BYTE colourType = 6)
 	{
-	/*   ______________________
+	/*  +----------------------+
 		|Colour types 0 and 4  |		The array must beginning
 		|----------------------|		 b  K  G  D 
 		|Greyscale     |2 bytes|		98 75 71 68
-		|--------------|-------|		 0  1  2  3  
+		|--------------+-------|		 0  1  2  3  
 		|Colour types 2 and 6  |
-		|--------------|-------|
+		|--------------+-------|
 		|Red           |2 bytes|
-		|--------------|-------|
+		|--------------+-------|
 		|Green	       |2 bytes|
-		|--------------|-------|
+		|--------------+-------|
 		|Blue          |2 bytes|
-		|--------------|-------|
+		|--------------+-------|
 		|Colour type 3         |
-		|--------------|-------|
+		|--------------+-------|
 		|Palette index |1 byte |
-		|______________|_______|*/
+		+--------------+-------+*/
 
 		length = UcharArrToUint(arr - 4) + 12;
 		ctype = colourType; 

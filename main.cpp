@@ -7,6 +7,6 @@ using namespace std;
 int main()
 {
 	PNG_Reader img;
-	img.readFile("simple.png");
+	img.readFile("demo.png");
 	return 0;
 }
